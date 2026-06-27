@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Threat Tabletop | Cyber Diva Labs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0f; color: #e8e8f0; font-family: system-ui, sans-serif; min-height: 100vh; }
+  @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1)} }
+  @keyframes glow { 0%,100%{opacity:.6} 50%{opacity:1} }
+  button:focus-visible { outline: 2px solid #E0006E; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const C = {
+  bg:"#0a0a0f",surface:"#0f0f1a",card:"#13131f",border:"#1e1e3a",
+  pink:"#E0006E",cyan:"#00D4E8",text:"#e8e8f0",muted:"#6b6b8a",
+  warn:"#ff9500",danger:"#ff3b30",success:"#30d158",
+};
+
+const PQ = [
+  {id:"q1",text:"Which of these do you actively use and rely on most?",sub:"Select all that apply",multi:true,options:[
+    {id:"banking",label:"💳 Banking / investment apps"},{id:"social",label:"📱 Social media"},
+    {id:"dating",label:"❤️ Dating apps"},{id:"email",label:"📧 Email (Gmail, Outlook, work)"},
+    {id:"cloud",label:"☁️ Cloud storage"},{id:"shopping",label:"🛍️ Shopping accounts"},
+    {id:"auth",label:"🔐 Phone-based 2FA / authenticator"},
+  ]},
+  {id:"q2",text:"What would hurt you most if compromised?",sub:"Be honest — this shapes your scenario",multi:true,options:[
+    {id:"money",label:"💰 Money / financial accounts"},{id:"reputation",label:"🌐 Online reputation"},
+    {id:"privacy",label:"🔒 Personal privacy"},{id:"relationships",label:"💔 Relationships / trust"},
+    {id:"immigration",label:"🛂 Immigration status / documents"},{id:"job",label:"💼 Job / career"},
+    {id:"identity",label:"🪪 Identity theft"},
+  ]},
+  {id:"q3",text:"How would you describe your security habits?",sub:"No judgment — this calibrates difficulty",multi:false,options:[
+    {id:"basic",label:"🟡 Basic — same passwords, no 2FA everywhere"},
+    {id:"moderate",label:"🟠 Moderate — some 2FA, different passwords"},
+    {id:"advanced",label:"🔴 Advanced — password manager, VPN, hardware key"},
+    {id:"expert",label:"⚫ Expert — I work in security"},
+  ]},
+  {id:"q4",text:"Any current life context that increases your exposure?",sub:"These create realistic attack surfaces",multi:true,options:[
+    {id:"newcountry",label:"✈️ Living abroad / recently moved"},
+    {id:"dating_active",label:"💬 Actively dating online"},
+    {id:"jobsearch",label:"📄 Job searching"},
+    {id:"highprofile",label:"📢 Building a public profile / content creator"},
+    {id:"caregiver",label:"👴 Caregiver for elderly family member"},
+    {id:"financial_stress",label:"💸 Under financial pressure"},
+    {id:"none",label:"✅ None of the above"},
+  ]},
+];
+
+const CQ = [
+  {id:"q1",text:"What is your role and level of access?",sub:"This determines your threat surface",multi:false,options:[
+    {id:"exec",label:"👔 Executive / C-Suite"},{id:"finance",label:"💰 Finance / Accounting"},
+    {id:"it",label:"🖥️ IT / Security / Admin"},{id:"hr",label:"🧑‍💼 HR / People Ops"},
+    {id:"auditor",label:"📋 Auditor / Compliance / Legal"},{id:"sales",label:"📞 Sales / Customer-facing"},
+    {id:"general",label:"🏢 General employee"},
+  ]},
+  {id:"q2",text:"Which systems do you regularly access?",sub:"Select all that apply",multi:true,options:[
+    {id:"erp",label:"🏗️ ERP / financial systems (SAP, Oracle)"},{id:"crm",label:"📊 CRM (Salesforce, HubSpot)"},
+    {id:"cloud_infra",label:"☁️ Cloud infrastructure (AWS, Azure, GCP)"},{id:"hr_systems",label:"👥 HR / payroll systems"},
+    {id:"collab",label:"💬 Collaboration tools (Teams, Slack, Zoom)"},{id:"email_corp",label:"📧 Corporate email with sensitive data"},
+    {id:"compliance",label:"📁 Audit / compliance / legal documents"},
+  ]},
+  {id:"q3",text:"What would be most damaging if compromised?",sub:"Think about blast radius",multi:true,options:[
+    {id:"data_breach",label:"🔓 Customer / employee data breach"},{id:"financial_fraud",label:"💸 Fraudulent wire transfer / payment"},
+    {id:"ransom",label:"🦠 Ransomware / operational shutdown"},{id:"compliance_fail",label:"⚖️ Regulatory / compliance violation"},
+    {id:"ip_theft",label:"🧠 IP / trade secret theft"},{id:"reputational",label:"📰 Public reputational damage"},
+  ]},
+  {id:"q4",text:"Which AI tools does your organization use?",sub:"AI is now a primary attack vector",multi:true,options:[
+    {id:"chatgpt",label:"🤖 ChatGPT / Claude / Copilot for work tasks"},{id:"ai_email",label:"📧 AI email assistants"},
+    {id:"ai_video",label:"🎥 AI video / voice tools"},{id:"ai_code",label:"💻 AI coding assistants"},
+    {id:"ai_none",label:"🚫 None officially — employees use personal tools"},{id:"ai_policy",label:"✅ We have a formal AI usage policy"},
+  ]},
+];
+
+const PF = {
+  title:"THE MIDNIGHT MESSAGE",threatActor:"AI-assisted romance scammer",
+  setting:"It's 11pm. You've been chatting with someone on a dating app for three weeks — smart, attractive, works in tech overseas. Tonight they send an urgent message asking for help.",
+  steps:[
+    {id:1,situation:"Your match says their wallet was stolen abroad and needs $400 in gift cards to pay their hotel. They've sent a photo of their 'passport' as proof. The conversation has been warm and consistent for weeks.",
+    tension:"They say if you don't help in the next hour, they'll lose their hotel room.",
+    choices:[
+      {id:"A",text:"Stop all contact, reverse image search their profile photos, and report the account.",risk:"low",consequence:"Smart move. The reverse image search reveals their photo belongs to a stolen identity. You've avoided losing money and your personal details stay safe.",score:15},
+      {id:"B",text:"Buy the gift cards and send the codes — you trust them after three weeks.",risk:"critical",consequence:"The moment you send the codes they're gone. Gift card fraud is nearly impossible to reverse. You may have exposed yourself to further fraud.",score:-40},
+      {id:"C",text:"Ask to video call first before doing anything.",risk:"medium",consequence:"They refuse, claiming bad WiFi. You've revealed you're considering helping, which scammers log for future pressure.",score:-5},
+    ]},
+    {id:2,situation:"You blocked the first account. Three days later a new account messages you on Instagram claiming to be the same person, saying their dating app was hacked.",
+    tension:"They reference specific details from your earlier conversations — things only that person would know.",
+    choices:[
+      {id:"A",text:"Block immediately — detail recall is a scripted re-engagement technique.",risk:"low",consequence:"Correct. Scammers keep detailed conversation logs to restart the grooming cycle. Not responding breaks the loop.",score:10},
+      {id:"B",text:"Respond and ask how they got your Instagram — you're curious.",risk:"high",consequence:"They scraped your Instagram from your dating profile. Now they know you're still emotionally engaged.",score:-20},
+      {id:"C",text:"Ask a question only the real person would know to test them.",risk:"medium",consequence:"They answer correctly — because they have your full chat history. You're re-engaged in a conversation building toward another financial ask.",score:-10},
+    ]},
+    {id:3,situation:"You report both accounts. The platform asks if you'd like to submit evidence. You have screenshots including the fake passport photo.",
+    tension:"You're unsure if sharing information is safe and whether it will actually do anything.",
+    choices:[
+      {id:"A",text:"Submit screenshots to the platform and also file a report with the FBI IC3 at ic3.gov.",risk:"low",consequence:"Filing with IC3 creates an official record used in pattern analysis. Platform reports combined with IC3 data have led to real prosecutions.",score:15},
+      {id:"B",text:"Post the fake passport photo publicly on social media to warn others.",risk:"critical",consequence:"The photo may belong to an innocent person whose image was stolen. Publishing it could expose you to defamation liability.",score:-30},
+      {id:"C",text:"Do nothing — you didn't lose money so it's not worth the effort.",risk:"medium",consequence:"Without reports this operation continues targeting others.",score:-10},
+    ]},
+  ],
+  debrief:{
+    keyLessons:["The 3-week warmup before the ask is standard — scammers build emotional debt you feel obligated to repay.","Gift cards are irreversible and untraceable. Any urgent gift card payment request is always a scam.","Re-contact from a different account using your conversation details is a documented re-engagement tactic."],
+    attackTechnique:"This is Confidence Fraud combined with AI-assisted persona maintenance. Modern romance scammers use LLMs to maintain consistent conversations across dozens of targets simultaneously.",
+    immediateActions:["Reverse image search every profile photo before investing emotionally — use Google Images or TinEye.","Set up a Google Alert for your own name and email to detect if your identity is being used in scam profiles.","Report any suspected romance scam to ic3.gov and reportfraud.ftc.gov."],
+  },
+};
+
+const CF = {
+  title:"THE CEO VOICE CALL",threatActor:"BEC group using AI voice cloning",
+  setting:"It's Friday at 4:45pm. You receive a call that sounds exactly like your CEO asking you to handle an urgent wire transfer before the weekend. The caller ID shows as internal.",
+  steps:[
+    {id:1,situation:"The voice is indistinguishable from your CEO. They explain a confidential acquisition requires a $47,000 wire to an escrow account before 5pm. The CFO is traveling and you are listed as backup approver.",
+    tension:"They ask you not to discuss this with colleagues — it is under NDA until Monday.",
+    choices:[
+      {id:"A",text:"Tell them you need to verify, hang up, and call the CEO on their known direct number.",risk:"low",consequence:"The call was AI voice-cloned. When you call the real CEO, they have no idea what you're talking about. You just stopped a $47,000 fraud.",score:15},
+      {id:"B",text:"Process the wire — the voice is unmistakably your CEO and the urgency feels real.",risk:"critical",consequence:"AI voice cloning requires only seconds of source audio. The wire hits an overseas mule account instantly. Wire fraud recovery rate is under 10%.",score:-40},
+      {id:"C",text:"Ask them to send the request through official email channels first.",risk:"medium",consequence:"The attacker has a spoofed executive email ready. Email alone is not a sufficient second factor.",score:-10},
+    ]},
+    {id:2,situation:"IT confirms the caller ID was spoofed and finds a follow-up email with a PDF labeled Wire Instructions — Confidential. Two colleagues have already been CC'd.",
+    tension:"The PDF is sitting in your inbox and your CISO is asking you to forward it for analysis.",
+    choices:[
+      {id:"A",text:"Forward without opening and alert the CC'd colleagues not to open it.",risk:"low",consequence:"Correct containment. The PDF contained a credential-harvesting payload. IT neutralizes it in a sandbox.",score:10},
+      {id:"B",text:"Open the PDF to understand what you almost approved before forwarding.",risk:"critical",consequence:"Opening the PDF executes a payload that harvests your credentials. Your email, VPN, and connected systems are now compromised.",score:-35},
+      {id:"C",text:"Delete the email so no one else can accidentally open it.",risk:"high",consequence:"Deleting evidence of a cyberattack may violate your incident response policy and create compliance violations.",score:-25},
+    ]},
+    {id:3,situation:"Incident response is triggered. Your CISO asks for a written timeline for the cyber insurance claim. You nearly processed the wire before verifying.",
+    tension:"You're concerned about personal liability and whether to disclose you almost complied.",
+    choices:[
+      {id:"A",text:"Document everything fully including that you nearly processed the wire.",risk:"low",consequence:"Full disclosure protects you legally. Insurance investigators cross-reference timelines against call logs. Your verification catch is documented security awareness.",score:15},
+      {id:"B",text:"Omit that you almost processed the wire to avoid appearing negligent.",risk:"critical",consequence:"Investigators compare your statement against phone records. Inconsistencies can void the insurance claim and create personal legal exposure.",score:-35},
+      {id:"C",text:"Consult a personal attorney before submitting any written statement.",risk:"medium",consequence:"Reasonable but delays documentation. Your company's cyber insurance policy may have strict 72-hour reporting windows.",score:-5},
+    ]},
+  ],
+  debrief:{
+    keyLessons:["AI voice cloning requires only seconds of publicly available audio — any executive with video content online is a cloning target.","The NDA and secrecy instruction is the manipulation layer — legitimate urgent requests never require bypassing verification procedures.","Deleting suspected malicious content destroys forensic evidence and may create independent compliance violations."],
+    attackTechnique:"This is Business Email Compromise upgraded with AI voice synthesis, known as Vishing 2.0. Attackers clone executive voices from public audio and follow up with a malware-laced document.",
+    immediateActions:["Establish a verbal safe-word protocol with your finance team for any out-of-band wire requests.","Never open attachments from financial request emails — route all through IT sandbox review first.","Verify your cyber insurance policy covers AI-assisted social engineering."],
+  },
+};
+
+const riskColor = {low:C.success,medium:C.warn,high:C.danger,critical:C.pink};
+
+function IntakeScreen({mode, onComplete}) {
+  const qs = mode==="personal" ? PQ : CQ;
+  const accent = mode==="personal" ? C.pink : C.cyan;
+  const [step, setStep] = React.useState(0);
+  const [answers, setAnswers] = React.useState({});
+  const [sel, setSel] = React.useState([]);
+  const q = qs[step];
+
+  const toggle = id => {
+    if (!q.multi) { setSel([id]); return; }
+    setSel(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
+  };
+
+  const next = () => {
+    if (!sel.length) return;
+    const updated = {...answers,[q.id]:sel};
+    if (step < qs.length-1) { setAnswers(updated); setSel([]); setStep(step+1); }
+    else { onComplete(updated); }
+  };
+
+  return (
+    <div style={{maxWidth:560,margin:"0 auto",padding:"40px 20px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:32}}>
+        <span style={{fontFamily:"monospace",color:C.muted,fontSize:10,letterSpacing:3}}>PROFILE</span>
+        <div style={{flex:1,height:2,background:C.border,borderRadius:2,position:"relative"}}>
+          <div style={{position:"absolute",inset:0,width:`${((step+1)/qs.length)*100}%`,background:accent,borderRadius:2,transition:"width .4s"}}/>
+        </div>
+        <span style={{fontFamily:"monospace",color:accent,fontSize:10}}>{step+1}/{qs.length}</span>
+      </div>
+      <h2 style={{fontFamily:"'Orbitron',monospace",color:C.text,fontSize:"clamp(15px,3vw,21px)",marginBottom:6,lineHeight:1.3}}>{q.text}</h2>
+      <p style={{color:C.muted,fontSize:12,fontFamily:"monospace",marginBottom:24}}>{q.sub}</p>
+      <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:28}}>
+        {q.options.map(opt => {
+          const on = sel.includes(opt.id);
+          return (
+            <button key={opt.id} onClick={()=>toggle(opt.id)} style={{
+              background:on?accent+"15":C.card,border:`1px solid ${on?accent:C.border}`,
+              borderRadius:8,padding:"13px 15px",cursor:"pointer",textAlign:"left",
+              transition:"all .15s",display:"flex",alignItems:"center",gap:11,
+              color:on?C.text:C.muted,fontSize:14,
+            }}>
+              <span style={{width:17,height:17,borderRadius:q.multi?4:"50%",border:`2px solid ${on?accent:C.border}`,
+                background:on?accent:"transparent",flexShrink:0,display:"flex",alignItems:"center",
+                justifyContent:"center",fontSize:9,color:mode==="personal"?"#fff":C.bg,
+              }}>{on&&"✓"}</span>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <button onClick={next} disabled={!sel.length} style={{
+        width:"100%",padding:"14px",border:"none",borderRadius:8,
+        background:sel.length?accent:C.border,color:sel.length?(mode==="personal"?"#fff":C.bg):C.muted,
+        fontFamily:"'Orbitron',monospace",fontSize:12,letterSpacing:2,
+        cursor:sel.length?"pointer":"not-allowed",transition:"all .2s",fontWeight:700,
+      }}>
+        {step<qs.length-1?"NEXT →":"BUILD MY SCENARIO →"}
+      </button>
+    </div>
+  );
+}
+
+function ScenarioScreen({mode, answers, onRestart}) {
+  const [phase, setPhase] = React.useState("loading");
+  const [data, setData] = React.useState(null);
+  const [stepIdx, setStepIdx] = React.useState(0);
+  const [history, setHistory] = React.useState([]);
+  const accent = mode==="personal" ? C.pink : C.cyan;
+  const qs = mode==="personal" ? PQ : CQ;
+  const fallback = mode==="personal" ? PF : CF;
+
+  const buildProfile = () => qs.map(q => {
+    const ans = answers[q.id]||[];
+    const labels = ans.map(id => q.options.find(o=>o.id===id)?.label||id);
+    return `${q.text}\nSelected: ${labels.join(", ")}`;
+  }).join("\n\n");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const profile = buildProfile();
+      const modeDesc = mode==="personal"
+        ? "personal digital safety: romance scams, identity theft, account takeover, social engineering"
+        : "corporate AI threats 2025: voice cloning, BEC fraud, AI phishing, ransomware";
+      const prompt = `Create a cybersecurity tabletop scenario for ${modeDesc} based on this profile. Return ONLY valid JSON starting with { and ending with }. No markdown.
+
+Profile:
+${profile}
+
+JSON:
+{"title":"TITLE IN CAPS","threatActor":"attacker","setting":"2-sentence cinematic opener.","steps":[{"id":1,"situation":"2 sentences tied to profile.","tension":"1 sentence stakes.","choices":[{"id":"A","text":"Best action.","risk":"low","consequence":"Good outcome.","score":15},{"id":"B","text":"Dangerous action.","risk":"critical","consequence":"Bad consequence with legal angle.","score":-35},{"id":"C","text":"Hesitant action.","risk":"medium","consequence":"Partial protection.","score":-8}]},{"id":2,"situation":"Escalation. 2 sentences.","tension":"Stakes.","choices":[{"id":"A","text":"Correct.","risk":"low","consequence":"Good.","score":10},{"id":"B","text":"Wrong.","risk":"critical","consequence":"Bad.","score":-25},{"id":"C","text":"Partial.","risk":"medium","consequence":"Mixed.","score":-5}]},{"id":3,"situation":"Final decision. 2 sentences.","tension":"Highest stakes.","choices":[{"id":"A","text":"Correct final.","risk":"low","consequence":"Resolution.","score":15},{"id":"B","text":"Worst.","risk":"critical","consequence":"Devastating.","score":-40},{"id":"C","text":"Delayed.","risk":"medium","consequence":"Partial damage.","score":-10}]}],"debrief":{"keyLessons":["Lesson 1.","Lesson 2.","Lesson 3."],"attackTechnique":"Name and explain in 2 sentences.","immediateActions":["Action 1.","Action 2.","Action 3."]}}`;
+
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            model:"claude-sonnet-4-6",max_tokens:2000,
+            messages:[{role:"user",content:prompt},{role:"assistant",content:"{"}],
+          }),
+        });
+        if (!res.ok) throw new Error("API");
+        const json = await res.json();
+        if (json.error) throw new Error(json.error.message);
+        const raw = "{"+(json.content?.map(i=>i.text||"").join("")||"");
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("No JSON");
+        const parsed = JSON.parse(match[0]);
+        if (!parsed.steps?.length) throw new Error("Bad");
+        if (!cancelled) setData(parsed);
+      } catch(e) {
+        if (!cancelled) setData(fallback);
+      }
+      if (!cancelled) setPhase("scenario");
+    };
+    run();
+    return () => { cancelled = true; };
+  }, []);
+
+  const choose = choice => {
+    if (!data || !data.steps || !data.steps[stepIdx]) return;
+    setHistory(prev=>[...prev,{step:data.steps[stepIdx],choice}]);
+    setPhase("consequence");
+    setTimeout(()=>{
+      if (stepIdx<data.steps.length-1) { setStepIdx(s=>s+1); setPhase("scenario"); }
+      else { setPhase("debrief"); }
+    },3800);
+  };
+
+  const score = history.reduce((s,h)=>s+(h.choice.score||0),0);
+  const pct = Math.max(0,Math.min(100,Math.round(((score+75)/110)*100)));
+  const scoreColor = pct>=70?C.success:pct>=40?C.warn:C.danger;
+  const step = data?.steps?.[stepIdx];
+
+  if (phase==="loading") return (
+    <div style={{textAlign:"center",padding:"80px 20px"}}>
+      <div style={{fontFamily:"monospace",color:accent,fontSize:12,letterSpacing:3,marginBottom:20}}>
+        {mode==="personal"?"ANALYZING YOUR PROFILE...":"CALIBRATING AI THREAT VECTORS..."}
+      </div>
+      <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{width:8,height:8,borderRadius:"50%",background:accent,animation:`pulse 1.2s ease-in-out ${i*0.3}s infinite`}}/>
+        ))}
+      </div>
+      <p style={{color:C.muted,fontFamily:"monospace",fontSize:11,marginTop:20}}>Building your personalized threat scenario...</p>
+    </div>
+  );
+
+  return (
+    <div style={{maxWidth:640,margin:"0 auto",padding:"28px 20px"}}>
+      {(phase==="scenario"||phase==="consequence")&&data&&(
+        <>
+          <div style={{marginBottom:22}}>
+            <div style={{fontFamily:"monospace",color:C.muted,fontSize:9,letterSpacing:3,marginBottom:4}}>
+              {mode==="personal"?"PERSONAL THREAT TABLETOP":"CORPORATE AI THREAT TABLETOP"}
+            </div>
+            <h2 style={{fontFamily:"'Orbitron',monospace",color:accent,fontSize:"clamp(13px,2.8vw,18px)",margin:"0 0 4px"}}>{data.title}</h2>
+            <div style={{color:C.muted,fontSize:11,fontFamily:"monospace",marginBottom:10}}>Threat actor: {data.threatActor}</div>
+            <div style={{display:"flex",gap:5}}>
+              {data.steps.map((_,i)=>(
+                <div key={i} style={{flex:1,height:3,borderRadius:2,background:i<stepIdx?accent:i===stepIdx?accent+"88":C.border,transition:"background .3s"}}/>
+              ))}
+            </div>
+          </div>
+
+          {phase==="scenario"&&stepIdx===0&&(
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:16}}>
+              <div style={{fontFamily:"monospace",color:C.muted,fontSize:9,letterSpacing:2,marginBottom:8}}>THE SCENE</div>
+              <p style={{color:C.text,fontSize:13,lineHeight:1.7,margin:0}}>{data.setting}</p>
+            </div>
+          )}
+
+          {phase==="scenario"&&step&&(
+            <div>
+              <div style={{background:C.surface,border:`1px solid ${accent}44`,borderRadius:10,padding:16,marginBottom:14}}>
+                <div style={{fontFamily:"monospace",color:accent,fontSize:9,letterSpacing:2,marginBottom:8}}>DECISION POINT {stepIdx+1}</div>
+                <p style={{color:C.text,fontSize:13,lineHeight:1.7,margin:"0 0 8px"}}>{step.situation}</p>
+                <p style={{color:C.warn,fontSize:11,margin:0,fontFamily:"monospace"}}>⚠ {step.tension}</p>
+              </div>
+              <div style={{fontFamily:"monospace",color:C.muted,fontSize:9,letterSpacing:2,marginBottom:8}}>WHAT DO YOU DO?</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {step.choices.map(ch=>(
+                  <button key={ch.id} onClick={()=>choose(ch)} style={{
+                    background:C.card,border:`1px solid ${C.border}`,borderRadius:8,
+                    padding:"13px 14px",cursor:"pointer",textAlign:"left",
+                    transition:"all .15s",display:"flex",alignItems:"flex-start",gap:10,
+                  }}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.background=accent+"0e";}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.card;}}
+                  >
+                    <span style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:accent,background:accent+"1a",borderRadius:4,padding:"3px 6px",flexShrink:0}}>{ch.id}</span>
+                    <span style={{color:C.text,fontSize:13,lineHeight:1.5}}>{ch.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {phase==="consequence"&&history.length>0&&(()=>{
+            const last=history[history.length-1];
+            const good=last.choice.score>0;
+            return (
+              <div style={{background:C.card,border:`1px solid ${good?C.success:C.danger}44`,borderRadius:10,padding:20}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                  <span style={{fontSize:20}}>{good?"✅":"⚠️"}</span>
+                  <div>
+                    <div style={{fontFamily:"monospace",color:good?C.success:C.danger,fontSize:10,letterSpacing:2}}>{good?"GOOD CALL":"CONSEQUENCE"}</div>
+                    <span style={{fontSize:10,fontFamily:"monospace",padding:"2px 6px",borderRadius:4,marginTop:4,display:"inline-block",
+                      background:(riskColor[last.choice.risk]||C.muted)+"22",color:riskColor[last.choice.risk]||C.muted,
+                      textTransform:"uppercase",letterSpacing:1}}>{last.choice.risk} risk</span>
+                  </div>
+                </div>
+                <p style={{color:C.text,fontSize:13,lineHeight:1.7,margin:"0 0 12px"}}>{last.choice.consequence}</p>
+                <p style={{color:C.muted,fontFamily:"monospace",fontSize:10,margin:0}}>
+                  {stepIdx<data.steps.length-1?"Loading next decision...":"Preparing debrief..."}
+                </p>
+              </div>
+            );
+          })()}
+        </>
+      )}
+
+      {phase==="debrief"&&data&&(
+        <div>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontFamily:"monospace",color:C.muted,fontSize:10,letterSpacing:3,marginBottom:6}}>EXERCISE COMPLETE</div>
+            <h2 style={{fontFamily:"'Orbitron',monospace",color:C.text,fontSize:"clamp(18px,4vw,28px)",margin:"0 0 18px"}}>
+              {mode==="personal"?"YOUR":"INCIDENT"} <span style={{color:accent}}>DEBRIEF</span>
+            </h2>
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:22,marginBottom:16}}>
+              <div style={{fontFamily:"monospace",color:C.muted,fontSize:9,letterSpacing:2,marginBottom:8}}>SECURITY SCORE</div>
+              <div style={{fontSize:56,fontFamily:"'Orbitron',monospace",color:scoreColor,lineHeight:1}}>{pct}</div>
+              <div style={{color:C.muted,fontFamily:"monospace",fontSize:11,marginTop:8}}>
+                {pct>=70?"Strong instincts. Keep sharpening.":pct>=40?"Some good calls. Real gaps remain.":"Significant exposure. Time to act."}
+              </div>
+            </div>
+          </div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontFamily:"monospace",color:C.muted,fontSize:9,letterSpacing:2,marginBottom:8}}>YOUR DECISIONS</div>
+            {history.map((h,i)=>(
+              <div key={i} style={{background:C.card,border:`1px solid ${h.choice.score>0?C.success:C.danger}33`,borderRadius:8,padding:13,marginBottom:7}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                  <span style={{fontFamily:"monospace",color:C.muted,fontSize:10}}>Decision {i+1}</span>
+                  <span style={{fontFamily:"monospace",fontSize:10,padding:"2px 7px",borderRadius:4,
+                    background:h.choice.score>0?C.success+"22":C.danger+"22",color:h.choice.score>0?C.success:C.danger,
+                  }}>{h.choice.score>0?"+":""}{h.choice.score} pts</span>
+                </div>
+                <p style={{color:C.text,fontSize:12,margin:"0 0 4px"}}>{h.choice.text}</p>
+                <p style={{color:C.muted,fontSize:11,margin:0,lineHeight:1.5}}>{h.choice.consequence}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{background:C.surface,border:`1px solid ${accent}44`,borderRadius:10,padding:16,marginBottom:14}}>
+            <div style={{fontFamily:"monospace",color:accent,fontSize:9,letterSpacing:2,marginBottom:8}}>ATTACK TECHNIQUE</div>
+            <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.6}}>{data.debrief.attackTechnique}</p>
+          </div>
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:14}}>
+            <div style={{fontFamily:"monospace",color:C.muted,fontSize:9,letterSpacing:2,marginBottom:8}}>KEY LESSONS</div>
+            {data.debrief.keyLessons.map((l,i)=>(
+              <div key={i} style={{display:"flex",gap:9,marginBottom:8}}>
+                <span style={{color:accent,fontFamily:"monospace",fontSize:11,flexShrink:0}}>→</span>
+                <span style={{color:C.text,fontSize:12,lineHeight:1.5}}>{l}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{background:C.card,border:`1px solid ${C.danger}33`,borderRadius:10,padding:16,marginBottom:24}}>
+            <div style={{fontFamily:"monospace",color:C.danger,fontSize:9,letterSpacing:2,marginBottom:8}}>DO THIS NOW</div>
+            {data.debrief.immediateActions.map((a,i)=>(
+              <div key={i} style={{display:"flex",gap:9,marginBottom:8}}>
+                <span style={{color:C.danger,fontFamily:"monospace",fontSize:11,flexShrink:0}}>!</span>
+                <span style={{color:C.text,fontSize:12,lineHeight:1.5}}>{a}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={onRestart} style={{
+            width:"100%",background:accent,border:"none",borderRadius:8,
+            padding:"13px",color:mode==="personal"?"#fff":C.bg,
+            fontFamily:"'Orbitron',monospace",fontSize:11,letterSpacing:2,cursor:"pointer",fontWeight:700,
+          }}>← BACK TO HOME</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = React.useState("hub");
+  const [mode, setMode] = React.useState(null);
+  const [answers, setAnswers] = React.useState(null);
+  const restart = () => { setScreen("hub"); setMode(null); setAnswers(null); };
+
+  return (
+    <div style={{minHeight:"100vh",background:C.bg,color:C.text}}>
+      <div style={{borderBottom:`1px solid ${C.border}`,padding:"11px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={restart}>
+          <span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:C.pink,boxShadow:`0 0 8px ${C.pink}`,animation:"glow 2s ease-in-out infinite"}}/>
+          <span style={{fontFamily:"'Orbitron',monospace",fontSize:10,color:C.muted,letterSpacing:2}}>CYBER DIVA LABS</span>
+        </div>
+        {screen!=="hub"&&(
+          <button onClick={restart} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontFamily:"monospace",fontSize:11}}>← HOME</button>
+        )}
+      </div>
+
+      {screen==="hub"&&(
+        <div style={{maxWidth:700,margin:"0 auto",padding:"52px 20px",textAlign:"center"}}>
+          <div style={{fontFamily:"monospace",color:C.muted,fontSize:10,letterSpacing:4,marginBottom:14}}>INTERACTIVE EXERCISE</div>
+          <h1 style={{fontFamily:"'Orbitron',monospace",fontSize:"clamp(24px,5vw,44px)",color:C.text,margin:"0 0 14px",lineHeight:1.15}}>
+            THREAT <span style={{color:C.pink}}>TABLETOP</span>
+          </h1>
+          <p style={{color:C.muted,fontFamily:"monospace",fontSize:12,maxWidth:460,margin:"0 auto 44px",lineHeight:1.8}}>
+            Answer 4 questions. Get a hyper-personalized cybersecurity scenario built around your real life or role. Make decisions. See what happens.
+          </p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,maxWidth:580,margin:"0 auto 48px"}}>
+            {[
+              {m:"personal",accent:C.pink,icon:"🛡️",label:"PERSONAL",headline:"Your digital life under attack",tags:["Romance Scams","Identity Theft","Account Takeover","Phishing"],who:"For anyone who banks, dates, or exists online"},
+              {m:"corporate",accent:C.cyan,icon:"🏢",label:"CORPORATE",headline:"AI threats targeting your workplace",tags:["Voice Cloning","BEC Fraud","AI Phishing","Ransomware"],who:"For employees, managers, and security teams"},
+            ].map(card=>(
+              <button key={card.m} onClick={()=>{setMode(card.m);setScreen("intake");}} style={{
+                background:C.card,border:`1px solid ${C.border}`,borderRadius:14,
+                padding:"28px 20px",cursor:"pointer",textAlign:"left",transition:"all .2s",
+              }}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=card.accent;e.currentTarget.style.background=card.accent+"0d";e.currentTarget.style.transform="translateY(-2px)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.card;e.currentTarget.style.transform="none";}}
+              >
+                <div style={{fontSize:28,marginBottom:12}}>{card.icon}</div>
+                <div style={{fontFamily:"'Orbitron',monospace",color:card.accent,fontSize:12,fontWeight:700,letterSpacing:2,marginBottom:8}}>{card.label}</div>
+                <div style={{color:C.text,fontSize:13,marginBottom:14,lineHeight:1.4}}>{card.headline}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
+                  {card.tags.map(t=>(
+                    <span key={t} style={{background:card.accent+"12",border:`1px solid ${card.accent}25`,borderRadius:20,padding:"3px 9px",fontSize:10,fontFamily:"monospace",color:card.accent}}>{t}</span>
+                  ))}
+                </div>
+                <div style={{color:C.muted,fontSize:11,fontFamily:"monospace",borderTop:`1px solid ${C.border}`,paddingTop:12}}>{card.who}</div>
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",justifyContent:"center",gap:32,marginBottom:32,flexWrap:"wrap"}}>
+            {[["4","profile questions"],["3","decision points"],["1","risk score"],["∞","unique scenarios"]].map(([n,l])=>(
+              <div key={l} style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'Orbitron',monospace",fontSize:22,color:C.pink}}>{n}</div>
+                <div style={{color:C.muted,fontSize:10,fontFamily:"monospace",marginTop:2}}>{l}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{color:C.muted,fontSize:10,fontFamily:"monospace"}}>5–8 minutes · No data stored · AI-generated scenarios · cyberdivalabs.com</p>
+        </div>
+      )}
+
+      {screen==="intake"&&mode&&(
+        <IntakeScreen mode={mode} onComplete={a=>{setAnswers(a);setScreen("scenario");}}/>
+      )}
+      {screen==="scenario"&&mode&&answers&&(
+        <ScenarioScreen mode={mode} answers={answers} onRestart={restart}/>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById("root"));
+</script>
+</body>
+</html>
